@@ -2,6 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QQueue>
+#include <QByteArray>
+
 #include "ObdTransporter.h"
 
 QT_BEGIN_NAMESPACE
@@ -20,9 +23,13 @@ public:
     ObdTransporter* m_transporter;
 
 private slots:
-    void on_testButton_clicked();
+    void on_initializeButton_clicked();
 
 private:
     Ui::MainWindow *ui;
+    QQueue<QByteArray> m_commandQueue; // line of cars waiting
+    QByteArray m_incomingBuffer;       // holding pen for data
+
+    void processQueue();               // helper to send the next guy
 };
 #endif // MAINWINDOW_H
