@@ -19,6 +19,9 @@ public:
     ~MainWindow();
     ObdTransporter* m_transporter;
 
+private slots:
+    void on_testButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 };
