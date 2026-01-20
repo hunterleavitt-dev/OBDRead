@@ -54,3 +54,6 @@ compile_commands.json
 *_qmlcache.qrc
 /build
 /.cache
+
+# Design Documents
+design-specifications/
