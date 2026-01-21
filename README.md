@@ -8,12 +8,25 @@ A cross-platform desktop application for reading OBD-II diagnostic data from aut
 - **Multiple Connection Methods**: Support for TCP/IP (emulators) and Bluetooth Low Energy (BLE) adapters
 - **Hardware Abstraction Layer**: Clean interface allowing easy addition of new transport mechanisms
 - **Cross-Platform**: Runs on Windows, macOS, and Linux
+- **Modern UI Architecture**: Tab-based navigation with centralized state management
+- **Safety Features**: Driving/Parked mode with safety gating for dangerous actions
+- **Extensible Design**: Multi-Phase implementation plan for incremental feature development
 
 ## Architecture
 
 ```
 src/
 ├── core/
+│   ├── dto/            # Data Transfer Objects (UI-facing contracts)
+│   │   ├── ConnectionState.h
+│   │   ├── VehicleProfile.h
+│   │   ├── DtcEntry.h
+│   │   ├── ScanResult.h
+│   │   ├── ReadinessResult.h
+│   │   ├── PidMeta.h
+│   │   ├── PidSample.h
+│   │   ├── LogMeta.h
+│   │   └── LogData.h
 │   ├── DtcParser       # Parses DTC responses into human-readable codes (P/C/B/U)
 │   └── ObdCommand      # OBD-II command definitions
 ├── hardware/
@@ -21,8 +34,31 @@ src/
 │   ├── TcpTransporter  # TCP/IP implementation (for emulators)
 │   └── BleTransporter  # Bluetooth LE implementation (for Veepeak adapters)
 └── ui/
-    └── MainWindow      # Qt-based GUI
+    ├── state/
+    │   └── AppState    # Central application state management
+    ├── components/
+    │   ├── StatusBar   # Persistent status bar component
+    │   └── SafetyGate  # Safety gating utilities
+    ├── views/          # Tab views (placeholders for multi-phase implementation)
+    │   ├── HomeView
+    │   ├── CodesView
+    │   ├── LiveDataView
+    │   ├── ReadinessView
+    │   ├── AdvancedView
+    │   ├── LogsView
+    │   └── SettingsView
+    └── MainWindow      # Main application window with navigation
 ```
+
+### Architecture Layers
+
+The application follows a clean separation of concerns:
+
+- **UI Layer**: Widgets, views, and user interaction (`ui/views/`, `ui/components/`)
+- **App State**: Single source of truth for UI-relevant state (`ui/state/AppState`)
+- **Service/Adapters**: Thin layer calling existing backend (to be implemented in future phases)
+- **Existing OBD Backend**: Transport/protocol/decoding (`hardware/`, `core/DtcParser`)
+- **Data Contracts**: UI-facing DTOs for type-safe data exchange (`core/dto/`)
 
 ### DTC Code Types
 
@@ -121,19 +157,38 @@ Or run the test executable directly:
 Current tests cover:
 - DTC decoding for all code types (Powertrain, Chassis, Body, Network)
 - Byte-to-code conversion accuracy
+- Data Transfer Objects (DTOs) - all core DTO types and their operations
+- AppState management - state transitions and signal emissions
 
 ## Project Status
 
-This project is in early development (v0.1). Current implementation includes:
+This project is in early development (v0.1). The implementation follows a multi-phase plan for incremental feature development.
+
+### Phase 1 - Architecture + UI Skeleton (Completed)
+
+- [x] Shared Data Contracts (DTOs) - UI-facing data structures
+- [x] AppState management - centralized state with signals
+- [x] Navigation shell - tab-based UI with 7 main sections
+- [x] Status bar component - connection state and system info
+- [x] Safety gating utilities - Driving/Parked mode support
+- [x] Placeholder views - all tabs render with explicit placeholders
+- [x] Unit tests - DTOs and AppState coverage
+
+### Backend (Existing)
 
 - [x] Hardware abstraction layer (ObdTransporter interface)
 - [x] TCP transport for emulator testing
 - [x] DTC parsing and decoding
-- [x] Basic Qt GUI framework
 - [ ] Full BLE transport implementation
-- [ ] Live data (PIDs) reading
-- [ ] Code clearing functionality
-- [ ] Vehicle information retrieval
+
+### Future Phases (Planned)
+
+- [ ] Phase 2: Connection + Health Check + Scan Pipeline
+- [ ] Phase 3: Codes Tab - List + Filters + Detail
+- [ ] Phase 4: Live Data - Workbench + Dashboard
+- [ ] Phase 5: Logging + Playback + Export
+- [ ] Phase 6: Readiness Detail + Clear Codes
+- [ ] Phase 7: Reporting + Advanced + Polish
 
 ## License
 
