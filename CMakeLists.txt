@@ -16,17 +16,54 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(OBDRead
         MANUAL_FINALIZATION
         src/main.cpp
-        src/ui/mainwindow.cpp
-        src/ui/mainwindow.h
-        src/ui/mainwindow.ui
-        src/hardware/ObdTransporter.h
-        src/hardware/TcpTransporter.h
-        src/hardware/TcpTransporter.cpp
+        # Core DTOs
+        src/core/dto/ConnectionState.h
+        src/core/dto/VehicleProfile.h
+        src/core/dto/FreezeFrame.h
+        src/core/dto/DtcEntry.h
+        src/core/dto/ReadinessResult.h
+        src/core/dto/ScanResult.h
+        src/core/dto/PidMeta.h
+        src/core/dto/PidSample.h
+        src/core/dto/LogMeta.h
+        src/core/dto/LogData.h
+        # Core
         src/core/DtcParser.h
         src/core/DtcParser.cpp
         src/core/ObdCommand.h
+        # Hardware
+        src/hardware/ObdTransporter.h
+        src/hardware/TcpTransporter.h
+        src/hardware/TcpTransporter.cpp
         src/hardware/BleTransporter.h
         src/hardware/BleTransporter.cpp
+        # UI State
+        src/ui/state/AppState.h
+        src/ui/state/AppState.cpp
+        # UI Components
+        src/ui/components/StatusBar.h
+        src/ui/components/StatusBar.cpp
+        src/ui/components/SafetyGate.h
+        src/ui/components/SafetyGate.cpp
+        # UI Views
+        src/ui/views/HomeView.h
+        src/ui/views/HomeView.cpp
+        src/ui/views/CodesView.h
+        src/ui/views/CodesView.cpp
+        src/ui/views/LiveDataView.h
+        src/ui/views/LiveDataView.cpp
+        src/ui/views/ReadinessView.h
+        src/ui/views/ReadinessView.cpp
+        src/ui/views/AdvancedView.h
+        src/ui/views/AdvancedView.cpp
+        src/ui/views/LogsView.h
+        src/ui/views/LogsView.cpp
+        src/ui/views/SettingsView.h
+        src/ui/views/SettingsView.cpp
+        # UI MainWindow
+        src/ui/mainwindow.cpp
+        src/ui/mainwindow.h
+        src/ui/mainwindow.ui
     )
 endif()
 
@@ -68,25 +105,38 @@ enable_testing()
 # Find the Qt Test module
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
-# Create a separate executable for tests
-qt_add_executable(OBDReadTests
-    tests/tst_DtcParser.cpp
-    src/core/DtcParser.cpp   # (Include the file we are testing)
+# Define the implementation files (.cpp) that tests rely on
+set(TEST_IMPL_SOURCES
+    src/core/DtcParser.cpp
+    src/ui/state/AppState.cpp
+    # Add other .cpp files here for future tests
 )
 
-# Link against Qt Test and any other modules DtcParser needs (e.g., Core/Network)
-target_link_libraries(OBDReadTests PRIVATE
-    Qt6::Test
-    Qt6::Core
-    # Qt6::Network  <-- Uncomment if DtcParser ends up using networking
-)
+# Define a macro to streamline creating test targets
+macro(create_obd_test test_name source_file)
+    qt_add_executable(${test_name}
+        ${source_file}        # The specific test file (e.g., tst_DtcParser.cpp)
+        ${TEST_IMPL_SOURCES}  # The app logic needed to run the test
+    )
 
-# Include directories for tests
-target_include_directories(OBDReadTests PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/hardware
-)
+    target_link_libraries(${test_name} PRIVATE
+        Qt6::Test
+        Qt6::Core
+        Qt6::Widgets
+        Qt6::Network
+    )
 
-# Register the test so Qt Creator's "Test" panel sees it
-add_test(NAME DtcParserTest COMMAND OBDReadTests)
+    target_include_directories(${test_name} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hardware
+    )
+
+    # Register the test so ctest / Qt Creator sees it
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endmacro()
+
+# Generate separate executables
+create_obd_test(tst_DtcParser   tests/tst_DtcParser.cpp)
+create_obd_test(tst_DtoTests    tests/tst_DtoTests.cpp)
+create_obd_test(tst_AppStateTests tests/tst_AppStateTests.cpp)

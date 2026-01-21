@@ -14,6 +14,11 @@ private slots:
     void testDecodeDtc_Body();
     void testDecodeDtc_Network();
 
+    void testParseDtc_Powertrain();
+    void testParseDtc_Chassis();
+    void testParseDtc_Body();
+    void testParseDtc_Network();
+
 private:
     DtcParser *m_parser;
 };
@@ -28,6 +33,7 @@ void TestDtcParser::cleanupTestCase()
     // m_parser is deleted automatically as child of this
 }
 
+// DECODER TESTS
 void TestDtcParser::testDecodeDtc_Powertrain()
 {
     // P0133 = 01 33 in hex (Powertrain, 0133)
@@ -55,6 +61,32 @@ void TestDtcParser::testDecodeDtc_Network()
     QString result = DtcParser::decodeDtc(0xC1, 0x00);
     QCOMPARE(result, QString("U0100"));
 }
+
+// PARSER TESTS
+void TestDtcParser::testParseDtc_Powertrain()
+{
+    // TODO
+    // P0133 = 01 33 in hex (Powertrain, 0133)
+}
+
+void TestDtcParser::testParseDtc_Chassis()
+{
+    // TODO
+    // C0500 = 45 00 in hex (Chassis = 01 in upper 2 bits)
+}
+
+void TestDtcParser::testParseDtc_Body()
+{
+    // TODO
+    // B1234 = 92 34 in hex (Body = 10 in upper 2 bits)
+}
+
+void TestDtcParser::testParseDtc_Network()
+{
+    // TODO
+    // U0100 = C1 00 in hex (Network = 11 in upper 2 bits)
+}
+
 
 QTEST_MAIN(TestDtcParser)
 #include "tst_DtcParser.moc"
