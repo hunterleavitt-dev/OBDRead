@@ -55,8 +55,16 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
       # Configure requisite Qt6 dependencies prior to running CMake
-    - name: Install Qt6 dependencies
-      run: sudo apt-get update && sudo apt-get install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools
+    - name: Install Qt6 dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools libxkbcommon-x11-0
+
+    - name: Install Qt6 (Windows)
+      if: runner.os == 'Windows'
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.7.0' # Adjust version as needed
+        host: 'windows'
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -72,8 +80,11 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
+    # Required to resolve crash "Headless GUI" crash
+    # 1. 'QT_QPA_PLATFORM: offscreen' tells Qt not to look for a physical monitor.
+    # 2. '--output-on-failure' prints the logs if a test crashes (crucial for debugging).
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
