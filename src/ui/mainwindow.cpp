@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 #include "hardware/TcpTransporter.h"
 #include "core/dto/ConnectionState.h"
+#include "core/dto/ScanResult.h"
+#include "core/ScanService.h"
 #include <QDebug>
 #include <QVBoxLayout>
 
@@ -9,25 +11,20 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    // Initialize base UI widgets
     ui->setupUi(this);
 
-    // Create AppState
-    m_appState = new AppState(this);
+    // Create backend objects
+    m_appState = new AppState(this); // Create AppState
+    m_transporter = new TcpTransporter(this); // Create transporter
+    m_scanService = new ScanService(m_transporter, this); // Create scan service
 
     // Setup UI (tabs, status bar, etc.)
     setupUI();
 
-    // Create transporter
-    m_transporter = new TcpTransporter(this);
-
-    // Setup signal connections
-    setupConnections();
-
-    // Initial connection state
-    updateConnectionState();
-
-    // Connect to emulator (for testing)
-    m_transporter->connectToDevice("127.0.0.1:35000");
+    // Final wiring
+    setupConnections(); // Setup signal connections
+    updateConnectionState(); // Initial connection state
 }
 
 MainWindow::~MainWindow()
@@ -54,6 +51,8 @@ void MainWindow::setupUI()
 
     // Set AppState on all views
     m_homeView->setAppState(m_appState);
+    m_homeView->setScanService(m_scanService);
+    m_homeView->setTransporter(m_transporter);
     m_codesView->setAppState(m_appState);
     m_liveDataView->setAppState(m_appState);
     m_readinessView->setAppState(m_appState);
@@ -84,21 +83,13 @@ void MainWindow::setupConnections()
     connect(m_transporter, &ObdTransporter::connected, this, &MainWindow::onTransporterConnected);
     connect(m_transporter, &ObdTransporter::disconnected, this, &MainWindow::onTransporterDisconnected);
     connect(m_transporter, &ObdTransporter::errorOccurred, this, &MainWindow::onTransporterError);
-    connect(m_transporter, &ObdTransporter::dataReceived, this, [this](QByteArray data){
-        // Append new data to buffer
-        m_incomingBuffer.append(data);
 
-        // Check if buffer contains 'prompt' character (>)
-        if (m_incomingBuffer.contains('>')) {
-            qDebug() << "Full Response:" << m_incomingBuffer;
-
-            int endOfPrompt = m_incomingBuffer.indexOf('>') + 1;
-            m_incomingBuffer.remove(0, endOfPrompt);
-
-            // Trigger the next command
-            processQueue();
-        }
-    });
+    // ScanService signals
+    connect(m_scanService, &ScanService::connectionComplete, this, &MainWindow::onConnectionComplete);
+    connect(m_scanService, &ScanService::connectionFailed, this, &MainWindow::onConnectionFailed);
+    connect(m_scanService, &ScanService::adapterConnectedNoEcu, this, &MainWindow::onAdapterConnectedNoEcu);
+    connect(m_scanService, &ScanService::scanComplete, this, &MainWindow::onScanComplete);
+    connect(m_scanService, &ScanService::scanFailed, this, &MainWindow::onScanFailed);
 }
 
 void MainWindow::updateConnectionState()
@@ -107,15 +98,16 @@ void MainWindow::updateConnectionState()
         return;
     }
 
-    ConnectionStateInfo info;
+    ConnectionStateInfo info = m_appState->connectionState();
     
     if (!m_transporter) {
         info.state = ConnectionState::Disconnected;
     } else if (m_transporter->isConnected()) {
-        info.state = ConnectionState::ConnectedEcu;  // Will be refined in Phase 2
-        info.protocolName = "Auto";  // Placeholder
+        // State will be updated by scan service connection flow
+        // Keep existing protocol name if set
     } else {
         info.state = ConnectionState::Disconnected;
+        info.protocolName.clear();
     }
 
     m_appState->setConnectionState(info);
@@ -123,47 +115,72 @@ void MainWindow::updateConnectionState()
 
 void MainWindow::onTransporterConnected()
 {
-    qDebug() << "Connected! System Ready.";
-    updateConnectionState();
+    qDebug() << "Adapter connected, starting connection sequence...";
+    ConnectionStateInfo info;
+    info.state = ConnectionState::Connecting;
+    m_appState->setConnectionState(info);
+    
+    // Start connection sequence via ScanService
+    if (m_scanService) {
+        m_scanService->startConnection();
+    }
 }
 
 void MainWindow::onTransporterDisconnected()
 {
     qDebug() << "Disconnected.";
-    updateConnectionState();
+    ConnectionStateInfo info;
+    info.state = ConnectionState::Disconnected;
+    info.protocolName.clear();
+    m_appState->setConnectionState(info);
 }
 
 void MainWindow::onTransporterError(const QString& errorMsg)
 {
-    qDebug() << "Error:" << errorMsg;
+    qDebug() << "Transporter Error:" << errorMsg;
     ConnectionStateInfo info;
     info.state = ConnectionState::Error;
     info.lastError = errorMsg;
     m_appState->setConnectionState(info);
 }
 
-void MainWindow::on_initializeButton_clicked()
+void MainWindow::onConnectionComplete(const QString& protocolName)
 {
-    // This button is kept for backward compatibility but will be replaced in Phase 2
-    // Queue up the initialization sequence
-    m_commandQueue.enqueue("AT Z\r");
-    m_commandQueue.enqueue("AT E0\r"); // echo off
-    m_commandQueue.enqueue("AT SP 0\r"); // CRITICAL: tell it to find the protocol
-    m_commandQueue.enqueue("01 00\r");   // ping the ECU to ensure connection
-    m_commandQueue.enqueue("AT L0\r"); // linefeeds off
-    m_commandQueue.enqueue("03\r");    // ask for codes
-
-    // Kickstart the process
-    processQueue();
+    qDebug() << "Connection complete, protocol:" << protocolName;
+    ConnectionStateInfo info;
+    info.state = ConnectionState::ConnectedEcu;
+    info.protocolName = protocolName;
+    m_appState->setConnectionState(info);
 }
 
-void MainWindow::processQueue()
+void MainWindow::onConnectionFailed(const QString& errorMessage)
 {
-    // If there is nothing waiting, stop.
-    if (m_commandQueue.isEmpty()) return;
+    qDebug() << "Connection failed:" << errorMessage;
+    ConnectionStateInfo info;
+    info.state = ConnectionState::Error;
+    info.lastError = errorMessage;
+    m_appState->setConnectionState(info);
+}
 
-    // Send the next command in line
-    QByteArray nextCmd = m_commandQueue.dequeue();
-    qDebug() << "Sending:" << nextCmd;
-    m_transporter->sendCommand(nextCmd);
+void MainWindow::onAdapterConnectedNoEcu()
+{
+    qDebug() << "Adapter connected but ECU not responding";
+    ConnectionStateInfo info;
+    info.state = ConnectionState::ConnectedAdapter;
+    m_appState->setConnectionState(info);
+}
+
+void MainWindow::onScanComplete(const ScanResult& result)
+{
+    qDebug() << "Scan complete, DTCs found:" << result.dtcs.size();
+    m_appState->setLastScanResult(result);
+}
+
+void MainWindow::onScanFailed(const QString& errorMessage)
+{
+    qDebug() << "Scan failed:" << errorMessage;
+    // Update connection state to show error, but don't change connection status
+    ConnectionStateInfo info = m_appState->connectionState();
+    info.lastError = errorMessage;
+    m_appState->setConnectionState(info);
 }

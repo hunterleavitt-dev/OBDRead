@@ -7,6 +7,7 @@
 #include <QTabWidget>
 
 #include "hardware/ObdTransporter.h"
+#include "core/ScanService.h"
 #include "ui/state/AppState.h"
 #include "ui/components/StatusBar.h"
 #include "ui/views/HomeView.h"
@@ -31,17 +32,20 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     ObdTransporter* m_transporter;
+    ScanService* m_scanService;
 
 private slots:
-    void on_initializeButton_clicked();
     void onTransporterConnected();
     void onTransporterDisconnected();
     void onTransporterError(const QString& errorMsg);
+    void onConnectionComplete(const QString& protocolName);
+    void onConnectionFailed(const QString& errorMessage);
+    void onAdapterConnectedNoEcu();
+    void onScanComplete(const ScanResult& result);
+    void onScanFailed(const QString& errorMessage);
 
 private:
     Ui::MainWindow *ui;
-    QQueue<QByteArray> m_commandQueue;
-    QByteArray m_incomingBuffer;
 
     // App state and UI components
     AppState* m_appState = nullptr;
@@ -57,7 +61,6 @@ private:
     LogsView* m_logsView = nullptr;
     SettingsView* m_settingsView = nullptr;
 
-    void processQueue();
     void setupUI();
     void setupConnections();
     void updateConnectionState();

@@ -10,15 +10,19 @@ DtcParser::~DtcParser()
 {
 }
 
-// main function: converts raw ELM327 response to code list
+// main function: converts raw ELM327 response to code list (Mode 03 by default)
 QStringList DtcParser::parseDtcResponse(const QByteArray &rawData)
+{
+    return parseDtcResponse(rawData, 3); // Default to Mode 03
+}
+
+// main function: converts raw ELM327 response to code list (Mode 03 or 07)
+QStringList DtcParser::parseDtcResponse(const QByteArray &rawData, int mode)
 {
     QStringList dtcList;
 
-    // TODO: implement DTC parsing logic
-    // expected format: "43 XX YY XX YY ..." where 43 is mode response
+    // Expected format: "43 XX YY XX YY ..." for Mode 03, "47 XX YY XX YY ..." for Mode 07
     // each DTC is 2 bytes (XX YY)
-    // Q_UNUSED(rawData)
 
     // 1. clean the input (remove whitespace, newlines, and the prompt '>')
     QByteArray clean = rawData.simplified();
@@ -28,17 +32,19 @@ QStringList DtcParser::parseDtcResponse(const QByteArray &rawData)
     // 2. handle "Empty" or "Error" responses
     if (clean.contains("NODATA")) return dtcList;
     if (clean.contains("ERROR")) return dtcList;
+    if (clean.contains("NO DATA")) return dtcList;
 
     // 3. convert Hex String to Byte Array
     QByteArray bytes = QByteArray::fromHex(clean);
 
-    // 4. validate Mode 03 Response (first byte should be 0x43)
-    if (bytes.isEmpty() || (quint8)bytes.at(0) != 0x43) {
-        qDebug() << "Parser: Not a valid Mode 03 response:" << clean;
+    // 4. validate Mode Response (first byte should be 0x43 for Mode 03, 0x47 for Mode 07)
+    quint8 expectedModeByte = (mode == 7) ? 0x47 : 0x43;
+    if (bytes.isEmpty() || (quint8)bytes.at(0) != expectedModeByte) {
+        qDebug() << "Parser: Not a valid Mode" << mode << "response:" << clean;
         return dtcList;
     }
 
-    // 5. iterate through the byte pairs (skipping the first byte '43'); each code is 2 bytes.
+    // 5. iterate through the byte pairs (skipping the first byte); each code is 2 bytes.
     for (int i = 1; i < bytes.size(); i += 2) {
         if (i + 1 >= bytes.size()) break; // Safety check
 

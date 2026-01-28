@@ -30,6 +30,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         # Core
         src/core/DtcParser.h
         src/core/DtcParser.cpp
+        src/core/ReadinessParser.h
+        src/core/ReadinessParser.cpp
+        src/core/ScanService.h
+        src/core/ScanService.cpp
         src/core/ObdCommand.h
         # Hardware
         src/hardware/ObdTransporter.h
@@ -108,8 +112,12 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 # Define the implementation files (.cpp) that tests rely on
 set(TEST_IMPL_SOURCES
     src/core/DtcParser.cpp
+    src/core/ReadinessParser.cpp
+    src/core/ScanService.cpp
     src/ui/state/AppState.cpp
     # Add other .cpp files here for future tests
+
+    src/hardware/ObdTransporter.h # TODO: define core logic as a Library that both the main app and tests link against
 )
 
 # Define a macro to streamline creating test targets
@@ -140,3 +148,5 @@ endmacro()
 create_obd_test(tst_DtcParser   tests/tst_DtcParser.cpp)
 create_obd_test(tst_DtoTests    tests/tst_DtoTests.cpp)
 create_obd_test(tst_AppStateTests tests/tst_AppStateTests.cpp)
+create_obd_test(tst_ReadinessParser tests/tst_ReadinessParser.cpp)
+create_obd_test(tst_ScanService tests/tst_ScanService.cpp)
