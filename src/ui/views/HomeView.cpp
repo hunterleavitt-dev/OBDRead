@@ -49,6 +49,7 @@ void HomeView::setScanService(ScanService* scanService)
 void HomeView::setTransporter(ObdTransporter* transporter)
 {
     m_transporter = transporter;
+    updateButtonStates();
 }
 
 void HomeView::setupUI()
