@@ -193,3 +193,11 @@ This project is in early development (v0.1). The implementation follows a multi-
 ## License
 
 This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+This project uses the [ELM327-emulator](https://github.com/Ircama/ELM327-emulator) by Ircama to simulate ECU responses during development.
+
+**License Notice:** The emulator is used as an external testing tool and is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+
