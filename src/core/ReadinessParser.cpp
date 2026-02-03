@@ -28,96 +28,64 @@ ReadinessResult ReadinessParser::parseReadinessResponse(const QByteArray &rawDat
     // Convert Hex String to Byte Array
     QByteArray bytes = QByteArray::fromHex(clean);
 
-    // Validate Mode 01 PID 01 Response (should start with 0x41 0x01)
+    // Validate Mode 01 PID 01 Response (should start with 0x41 0x01 and have 6 data bytes)
     if (bytes.size() < 6 || bytes.at(0) != 0x41 || bytes.at(1) != 0x01) {
         qDebug() << "ReadinessParser: Not a valid Mode 01 PID 01 response:" << clean;
         return result;
     }
 
-    // Mode 01 PID 01 response format:
+    // Mode 01 PID 01 response format (per SAE J1979 / ISO 15031-5):
     // Byte 0: 0x41 (Mode 01 response)
     // Byte 1: 0x01 (PID 01)
-    // Byte 2: A - MIL status and DTC count (bit 7 = MIL, bits 0-6 = DTC count)
-    // Byte 3: B - Monitor status (bits 0-7)
-    // Byte 4: C - Monitor status (bits 0-7)
-    // Byte 5+: Additional data (if present)
+    // Byte 2: A - MIL status (bit 7) and DTC count (bits 0-6)
+    // Byte 3: B - Common monitors: availability (bits 0-2), engine type (bit 3), completeness (bits 4-6)
+    // Byte 4: C - Engine-specific monitors availability
+    // Byte 5: D - Engine-specific monitors completeness
+    //
+    // IMPORTANT: For availability bits, 1 = available. For completeness bits, 0 = complete, 1 = incomplete.
 
-    // Parse monitor status bytes (B and C)
-    quint8 byteB = bytes.size() > 3 ? (quint8)bytes.at(3) : 0;
-    quint8 byteC = bytes.size() > 4 ? (quint8)bytes.at(4) : 0;
+    quint8 byteB = (quint8)bytes.at(3);
+    quint8 byteC = (quint8)bytes.at(4);
+    quint8 byteD = (quint8)bytes.at(5);
 
-    // Monitor bit mappings (from OBD-II specification):
-    // Byte B (bits 0-7):
-    // Bit 0: Misfire Monitor (MIS)
-    // Bit 1: Fuel System Monitor (FUEL)
-    // Bit 2: Comprehensive Component Monitor (CCM)
-    // Bit 3: Reserved
-    // Bit 4: Catalyst Monitor (CAT)
-    // Bit 5: Heated Catalyst Monitor (HCAT)
-    // Bit 6: Evaporative System Monitor (EVAP)
-    // Bit 7: Secondary Air System Monitor (SAS) - not commonly used
+    // Helper lambda to parse a monitor given availability and completeness bits
+    // availBit: 1 = monitor is available/supported
+    // compBit: 0 = complete, 1 = incomplete
+    auto parseMonitor = [&result](const QString& name, bool available, bool incompleteFlag) {
+        if (!available) {
+            result.setMonitorStatus(name, MonitorStatus::Unsupported);
+        } else if (incompleteFlag) {
+            result.setMonitorStatus(name, MonitorStatus::Incomplete);
+        } else {
+            result.setMonitorStatus(name, MonitorStatus::Complete);
+        }
+    };
 
-    // Byte C (bits 0-7):
-    // Bit 0: Oxygen Sensor Monitor (O2S)
-    // Bit 1: Oxygen Sensor Heater Monitor (O2SH)
-    // Bit 2: EGR/VVT System Monitor (EGR)
-    // Bit 3: PM Filter Monitor (PM)
-    // Bit 4-7: Reserved
+    // Parse common monitors from Byte B
+    // Availability: B0=MIS, B1=FUEL, B2=CCM
+    // Completeness: B4=MIS, B5=FUEL, B6=CCM (0 = complete, 1 = incomplete)
+    parseMonitor("MIS",  (byteB & 0x01) != 0, (byteB & 0x10) != 0);  // Misfire
+    parseMonitor("FUEL", (byteB & 0x02) != 0, (byteB & 0x20) != 0);  // Fuel System
+    parseMonitor("CCM",  (byteB & 0x04) != 0, (byteB & 0x40) != 0);  // Comprehensive Component
 
-    // Parse Byte B monitors
-    if (byteB & 0x01) {
-        result.setMonitorStatus("MIS", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("MIS", MonitorStatus::Incomplete);
-    }
+    // Parse engine-specific monitors from Bytes C (availability) and D (completeness)
+    // For spark ignition engines (assuming spark ignition for now):
+    // C0/D0: Catalyst (CAT)
+    // C1/D1: Heated Catalyst (HCAT)
+    // C2/D2: Evaporative System (EVAP)
+    // C3/D3: Secondary Air System (SAS)
+    // C4/D4: Gasoline Particulate Filter (GPF) - formerly reserved/A/C
+    // C5/D5: Oxygen Sensor (O2S)
+    // C6/D6: Oxygen Sensor Heater (O2SH)
+    // C7/D7: EGR and/or VVT System (EGR)
 
-    if (byteB & 0x02) {
-        result.setMonitorStatus("FUEL", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("FUEL", MonitorStatus::Incomplete);
-    }
-
-    if (byteB & 0x04) {
-        result.setMonitorStatus("CCM", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("CCM", MonitorStatus::Incomplete);
-    }
-
-    if (byteB & 0x10) {
-        result.setMonitorStatus("CAT", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("CAT", MonitorStatus::Incomplete);
-    }
-
-    if (byteB & 0x20) {
-        result.setMonitorStatus("HCAT", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("HCAT", MonitorStatus::Incomplete);
-    }
-
-    if (byteB & 0x40) {
-        result.setMonitorStatus("EVAP", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("EVAP", MonitorStatus::Incomplete);
-    }
-
-    // Parse Byte C monitors
-    if (byteC & 0x01) {
-        result.setMonitorStatus("O2S", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("O2S", MonitorStatus::Incomplete);
-    }
-
-    if (byteC & 0x02) {
-        result.setMonitorStatus("O2SH", MonitorStatus::Complete);
-    } else {
-        result.setMonitorStatus("O2SH", MonitorStatus::Incomplete);
-    }
-
-    // Note: We mark monitors as Incomplete if the bit is not set, but we don't know
-    // if they're truly unsupported. For now, we'll assume all monitors are supported
-    // if they appear in the response. Truly unsupported monitors would need additional
-    // information from Mode 01 PID 01 extended data or other sources.
+    parseMonitor("CAT",  (byteC & 0x01) != 0, (byteD & 0x01) != 0);  // Catalyst
+    parseMonitor("HCAT", (byteC & 0x02) != 0, (byteD & 0x02) != 0);  // Heated Catalyst
+    parseMonitor("EVAP", (byteC & 0x04) != 0, (byteD & 0x04) != 0);  // Evaporative System
+    parseMonitor("SAS",  (byteC & 0x08) != 0, (byteD & 0x08) != 0);  // Secondary Air System
+    parseMonitor("O2S",  (byteC & 0x20) != 0, (byteD & 0x20) != 0);  // Oxygen Sensor
+    parseMonitor("O2SH", (byteC & 0x40) != 0, (byteD & 0x40) != 0);  // Oxygen Sensor Heater
+    parseMonitor("EGR",  (byteC & 0x80) != 0, (byteD & 0x80) != 0);  // EGR/VVT System
 
     return result;
 }

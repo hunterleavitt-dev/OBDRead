@@ -61,11 +61,23 @@ void TestReadinessParser::testInvalidResponse()
 
 void TestReadinessParser::testValidResponseAllComplete()
 {
-    // Mode 01 PID 01 response with all monitors complete
-    // Byte 2: 0x00 (MIL off, 0 DTCs)
-    // Byte 3: 0xFF (all monitors complete)
-    // Byte 4: 0xFF (all monitors complete)
-    QByteArray response = "41 01 00 FF FF";
+    // Response with all monitors available and complete
+    // Per SAE J1979: availability bit = 1 means supported, completeness bit = 0 means complete
+    //
+    // 41: Service Mode 01 response
+    // 01: PID 01 (Monitor status since DTCs cleared)
+    // 00 (A): A7=0 (MIL off), A6-A0=0 (0 DTCs)
+    // 07 (B): 0000 0111
+    //         B0-B2 = 111: Common monitors available (MIS, FUEL, CCM)
+    //         B3 = 0: Spark ignition engine
+    //         B4-B6 = 000: Common monitors complete
+    // 67 (C): 0110 0111
+    //         C0=1 (CAT avail), C1=1 (HCAT avail), C2=1 (EVAP avail)
+    //         C5=1 (O2S avail), C6=1 (O2SH avail)
+    // 00 (D): 0000 0000
+    //         All engine-specific monitors complete (0 = complete)
+    
+    QByteArray response = "41 01 00 07 67 00";
     ReadinessResult result = m_parser->parseReadinessResponse(response);
     
     QVERIFY(!result.monitors.isEmpty());
@@ -84,11 +96,22 @@ void TestReadinessParser::testValidResponseAllComplete()
 
 void TestReadinessParser::testValidResponseAllIncomplete()
 {
-    // Mode 01 PID 01 response with all monitors incomplete
-    // Byte 2: 0x00 (MIL off, 0 DTCs)
-    // Byte 3: 0x00 (all monitors incomplete)
-    // Byte 4: 0x00 (all monitors incomplete)
-    QByteArray response = "41 01 00 00 00";
+    // Response with all monitors available but incomplete
+    // Per SAE J1979: availability bit = 1 means supported, completeness bit = 1 means incomplete
+    //
+    // 41: Service Mode 01 response
+    // 01: PID 01
+    // 00 (A): MIL off, 0 DTCs
+    // 77 (B): 0111 0111
+    //         B0-B2 = 111: Common monitors available
+    //         B3 = 0: Spark ignition
+    //         B4-B6 = 111: Common monitors incomplete (1 = incomplete)
+    // 67 (C): 0110 0111
+    //         Engine-specific monitors available (CAT, HCAT, EVAP, O2S, O2SH)
+    // 67 (D): 0110 0111
+    //         Engine-specific monitors incomplete (1 = incomplete)
+    
+    QByteArray response = "41 01 00 77 67 67";
     ReadinessResult result = m_parser->parseReadinessResponse(response);
     
     QVERIFY(!result.monitors.isEmpty());
@@ -107,15 +130,26 @@ void TestReadinessParser::testValidResponseAllIncomplete()
 
 void TestReadinessParser::testValidResponseMixed()
 {
-    // Mode 01 PID 01 response with mixed status
-    // Byte 2: 0x00 (MIL off, 0 DTCs)
-    // Byte 3: 0x01 (only MIS complete)
-    // Byte 4: 0x03 (O2S and O2SH complete)
-    QByteArray response = "41 01 00 01 03";
+    // Response with mixed monitor status
+    // Per SAE J1979: availability bit = 1 means supported, completeness bit = 0 means complete
+    //
+    // 41: Service Mode 01 response
+    // 01: PID 01
+    // 00 (A): MIL off, 0 DTCs
+    // 67 (B): 0110 0111
+    //         B0=1 (MIS avail), B1=1 (FUEL avail), B2=1 (CCM avail)
+    //         B4=0 (MIS complete), B5=1 (FUEL incomplete), B6=1 (CCM incomplete)
+    // 60 (C): 0110 0000
+    //         C5=1 (O2S avail), C6=1 (O2SH avail)
+    //         C0-C2=0 (CAT, HCAT, EVAP not available)
+    // 00 (D): 0000 0000
+    //         D5=0 (O2S complete), D6=0 (O2SH complete)
+    
+    QByteArray response = "41 01 00 67 60 00";
     ReadinessResult result = m_parser->parseReadinessResponse(response);
     
     QVERIFY(!result.monitors.isEmpty());
-    QVERIFY(!result.overallReady); // Not all complete
+    QVERIFY(!result.overallReady); // Not all complete (FUEL and CCM are incomplete)
     
     // Check specific monitors
     QCOMPARE(result.getMonitorStatus("MIS"), MonitorStatus::Complete);
@@ -128,7 +162,13 @@ void TestReadinessParser::testValidResponseMixed()
 void TestReadinessParser::testPartialResponse()
 {
     // Response with prompt character (as would come from ELM327)
-    QByteArray response = "41 01 00 FF FF >";
+    // All monitors available and complete, with trailing '>' prompt
+    //
+    // 07 (B): Common monitors available (B0-B2=111), complete (B4-B6=000)
+    // 67 (C): Engine-specific monitors available (CAT, HCAT, EVAP, O2S, O2SH)
+    // 00 (D): All engine-specific monitors complete
+    
+    QByteArray response = "41 01 00 07 67 00 >";
     ReadinessResult result = m_parser->parseReadinessResponse(response);
     
     QVERIFY(!result.monitors.isEmpty());
