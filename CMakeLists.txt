@@ -9,7 +9,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Test)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Test SerialPort)
 
 qt_add_executable(OBDRead
     MANUAL_FINALIZATION
