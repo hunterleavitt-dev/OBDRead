@@ -58,3 +58,55 @@ compile_commands.json
 # Design Documents
 design-specifications/
 /design-specifcations
+
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+bin/
+lib/
+include/
+share/
+pyvenv.cfg
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.lucid
+.cache/pip
+
+# WSL2 & Remote Development
+.vscode/
+.cursor/
+*.code-workspace
+.history/
+.devcontainer/
+
+# Build Artifacts (CMake/Ninja)
+# Current file already covers /build, but these ensure Ninja/CMake 
+# artifacts outside that folder are caught.
+build/
+out/
+CMakeFiles/
+CMakeCache.txt
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+.cmake/
+_deps/
+
+# Emulator & Serial PTYs
+/dev/pts/*
+*.log
+elm327.pid
+
+# Windows Interop (OS Specific)
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
