@@ -9,12 +9,10 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Test)
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(OBDRead
-        MANUAL_FINALIZATION
+qt_add_executable(OBDRead
+    MANUAL_FINALIZATION
         src/main.cpp
         # Core DTOs
         src/core/dto/ConnectionState.h
@@ -69,7 +67,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/ui/mainwindow.h
         src/ui/mainwindow.ui
     )
-endif()
 
 # --- Link Libraries ---
 target_link_libraries(OBDRead PRIVATE Qt6::Widgets Qt6::Network)
