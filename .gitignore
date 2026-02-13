@@ -55,10 +55,6 @@ compile_commands.json
 /build
 /.cache
 
-# Design Documents
-design-specifications/
-/design-specifcations
-
 # Python & Virtual Environments
 .venv/
 venv/
