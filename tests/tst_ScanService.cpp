@@ -4,6 +4,8 @@
 #include "core/dto/ScanResult.h"
 #include "core/dto/DtcEntry.h"
 #include <QSignalSpy>
+#include <QTimer>
+#include <qtestcase.h>
 
 // Mock transporter for testing
 class MockTransporter : public ObdTransporter
@@ -26,20 +28,27 @@ public:
     
     void sendCommand(const QByteArray &cmd) override {
         m_lastCommand = cmd;
-        // Simulate response based on command
+        // Determine response based on command
+        QByteArray response;
         if (cmd.contains("01 01")) {
-            emit dataReceived("41 01 80 00 00 >"); // MIL on, no readiness
+            response = "41 01 80 00 00 >"; // MIL on, no readiness
         } else if (cmd.contains("03")) {
-            emit dataReceived("43 01 33 00 00 >"); // P0133
+            response = "43 01 33 00 00 >"; // P0133
         } else if (cmd.contains("07")) {
-            emit dataReceived("47 00 00 00 00 >"); // No pending DTCs
+            response = "47 00 00 00 00 >"; // No pending DTCs
         } else if (cmd.contains("AT DP")) {
-            emit dataReceived("ISO 9141-2 >");
+            response = "ISO 9141-2 >";
         } else if (cmd.contains("01 00")) {
-            emit dataReceived("41 00 BE 1F A8 13 >"); // ECU responds
+            response = "41 00 BE 1F A8 13 >"; // ECU responds
         } else {
-            emit dataReceived("OK >");
+            response = "OK >";
         }
+        // Defer emission to the next event-loop iteration so that the
+        // caller (ScanService::processNextCommand) returns before the
+        // response arrives, matching real async hardware behaviour.
+        QTimer::singleShot(0, this, [this, response]() {
+            emit dataReceived(response);
+        });
     }
     
     bool isConnected() const override {
@@ -100,22 +109,22 @@ void TestScanService::testConnectionSequence()
     // Start connection sequence
     m_scanService->startConnection();
     
+    // Mock responses are delivered asynchronously, so the state must still
+    // be Connecting at this point.
     QVERIFY(m_scanService->isConnecting());
     
-    // Process events to allow signals to propagate
-    QTest::qWait(100);
+    // Spin the event loop until the full command-response chain completes
+    QTRY_VERIFY_WITH_TIMEOUT(!m_scanService->isConnecting(), 1000);
     
-    // Connection should complete (mock transporter responds immediately)
-    // Note: In real scenario, we'd need to wait for all responses
-    // For now, just verify the service accepts the connection start
-    QVERIFY(m_scanService->isConnecting() || !m_scanService->isConnecting());
+    // Verify the connection completed successfully
+    QCOMPARE(connectionCompleteSpy.count(), 1);
+    QCOMPARE(connectionFailedSpy.count(), 0);
 }
 
 void TestScanService::testScanSequence()
 {
-    // First ensure connected
+    // Ensure transporter is connected
     m_transporter->connectToDevice("127.0.0.1:35000");
-    QTest::qWait(50);
     
     QSignalSpy scanCompleteSpy(m_scanService, &ScanService::scanComplete);
     QSignalSpy scanFailedSpy(m_scanService, &ScanService::scanFailed);
@@ -125,13 +134,12 @@ void TestScanService::testScanSequence()
     
     QVERIFY(m_scanService->isScanning());
     
-    // Process events
-    QTest::qWait(200);
+    // Spin the event loop until the scan finishes
+    QTRY_VERIFY_WITH_TIMEOUT(!m_scanService->isScanning(), 1000);
     
-    // Verify scan state
-    // In real scenario, scan would complete and emit scanComplete signal
-    // For now, just verify the service accepts scan start
-    QVERIFY(m_scanService->isScanning() || !m_scanService->isScanning());
+    // Verify the scan completed successfully
+    QCOMPARE(scanCompleteSpy.count(), 1);
+    QCOMPARE(scanFailedSpy.count(), 0);
 }
 
 void TestScanService::testCancel()
