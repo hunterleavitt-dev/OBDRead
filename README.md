@@ -5,7 +5,7 @@ A cross-platform desktop application for reading OBD-II diagnostic data from aut
 ## Features
 
 - **Diagnostic Trouble Code (DTC) Reading**: Parse and decode DTCs from OBD-II Mode 03 (stored codes) and Mode 07 (pending codes)
-- **Multiple Connection Methods**: Support for TCP/IP (emulators) and Bluetooth Low Energy (BLE) adapters
+- **Multiple Connection Methods**: Support for Serial/PTY (ELM327 adapters), TCP/IP (emulators), and Bluetooth Low Energy (planned)
 - **Hardware Abstraction Layer**: Clean interface allowing easy addition of new transport mechanisms
 - **Cross-Platform**: Runs on Windows, macOS, and Linux
 - **Modern UI Architecture**: Tab-based navigation with centralized state management
@@ -20,6 +20,7 @@ src/
 │   ├── dto/            # Data Transfer Objects (UI-facing contracts)
 │   │   ├── ConnectionState.h
 │   │   ├── VehicleProfile.h
+│   │   ├── FreezeFrame.h
 │   │   ├── DtcEntry.h
 │   │   ├── ScanResult.h
 │   │   ├── ReadinessResult.h
@@ -32,9 +33,10 @@ src/
 │   ├── ScanService     # Manages scan pipeline and command sequencing
 │   └── ObdCommand      # OBD-II command definitions
 ├── hardware/
-│   ├── ObdTransporter  # Abstract interface for OBD communication
-│   ├── TcpTransporter  # TCP/IP implementation (for emulators)
-│   └── BleTransporter  # Bluetooth LE implementation (for Veepeak adapters)
+│   ├── ObdTransporter      # Abstract interface for OBD communication
+│   ├── SerialTransporter   # Serial/PTY implementation (primary transport)
+│   ├── TcpTransporter      # TCP/IP implementation (for emulators)
+│   └── BleTransporter      # Bluetooth LE implementation (stub, planned)
 └── ui/
     ├── state/
     │   └── AppState    # Central application state management
@@ -76,6 +78,7 @@ The parser supports all four DTC categories:
 - **Qt6** with the following modules:
   - Qt6::Widgets
   - Qt6::Network
+  - Qt6::SerialPort
   - Qt6::Test (for running tests)
 - **C++17** compatible compiler
 
@@ -109,8 +112,8 @@ cmake --build . --config Release
 1. **Launch the application** - The main window opens with the Home/Health tab active.
 
 2. **Enter connection address:**
+   - **Serial/PTY**: Enter the device path (e.g., `/dev/pts/3` or `/dev/ttyUSB0`)
    - **TCP Emulator**: Enter IP address and port (e.g., `127.0.0.1:35000`)
-   - **BLE Adapter**: Enter MAC address (e.g., `AA:BB:CC:DD:EE:FF`)
 
 3. **Click "Connect"** - The application will:
    - Connect to the adapter
@@ -148,8 +151,8 @@ cmake --build . --config Release
   - Vehicle supports OBD-II protocol
 
 - **Connection Timeout**: The adapter did not respond. Check:
+  - Serial device path exists and is accessible (for Serial/PTY)
   - Network connectivity (for TCP)
-  - Bluetooth pairing (for BLE)
   - Adapter power and status
 
 - **Scan Errors**: Some scan operations may fail while others succeed. The application will display partial results when available.
@@ -165,10 +168,14 @@ cd build
 ctest --output-on-failure
 ```
 
-Or run the test executable directly:
+Or run individual test executables directly:
 
 ```bash
-./OBDReadTests
+./tst_DtcParser
+./tst_ReadinessParser
+./tst_ScanService
+./tst_DtoTests
+./tst_AppStateTests
 ```
 
 ### Test Coverage
@@ -211,10 +218,11 @@ This project is in early development (v0.1). The implementation follows a multi-
 ### Backend (Existing)
 
 - [x] Hardware abstraction layer (ObdTransporter interface)
+- [x] Serial/PTY transport (primary, for ELM327 adapters)
 - [x] TCP transport for emulator testing
 - [x] DTC parsing and decoding (Mode 03 and Mode 07)
 - [x] Readiness monitor parsing
-- [ ] Full BLE transport implementation
+- [ ] Full BLE transport implementation (currently stub)
 
 ### Future Phases (Planned)
 
