@@ -66,8 +66,8 @@ void HomeView::setupUI()
     QHBoxLayout* addressLayout = new QHBoxLayout();
     addressLayout->addWidget(new QLabel("Address:", this));
     m_addressInput = new QLineEdit(this);
-    m_addressInput->setPlaceholderText("127.0.0.1:35000 (TCP) or MAC address (BLE)");
-    m_addressInput->setText("127.0.0.1:35000"); // Default for testing
+    m_addressInput->setPlaceholderText("e.g. /dev/pts/10 (from emulator log) or MAC address (BLE)");
+    m_addressInput->setText("/dev/pts/0"); // Default for PTY (user should check emulator output)
     addressLayout->addWidget(m_addressInput);
     connectionLayout->addLayout(addressLayout);
 

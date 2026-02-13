@@ -37,6 +37,8 @@ qt_add_executable(OBDRead
         src/hardware/ObdTransporter.h
         src/hardware/TcpTransporter.h
         src/hardware/TcpTransporter.cpp
+        src/hardware/SerialTransporter.h
+        src/hardware/SerialTransporter.cpp
         src/hardware/BleTransporter.h
         src/hardware/BleTransporter.cpp
         # UI State
@@ -69,7 +71,7 @@ qt_add_executable(OBDRead
     )
 
 # --- Link Libraries ---
-target_link_libraries(OBDRead PRIVATE Qt6::Widgets Qt6::Network)
+target_link_libraries(OBDRead PRIVATE Qt6::Widgets Qt6::Network Qt6::SerialPort)
 
 # --- Include Directories ---
 target_include_directories(OBDRead PRIVATE

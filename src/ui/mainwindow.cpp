@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "hardware/TcpTransporter.h"
+#include "hardware/SerialTransporter.h"
 #include "core/dto/ConnectionState.h"
 #include "core/dto/ScanResult.h"
 #include "core/ScanService.h"
@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Create backend objects
     m_appState = new AppState(this); // Create AppState
-    m_transporter = new TcpTransporter(this); // Create transporter
+    m_transporter = new SerialTransporter(this); // Create transporter
     m_scanService = new ScanService(m_transporter, this); // Create scan service
 
     // Setup UI (tabs, status bar, etc.)
