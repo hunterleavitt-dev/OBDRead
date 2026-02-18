@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(OBDRead VERSION 0.1 LANGUAGES CXX)
+project(OBDRead VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,12 +9,10 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Test SerialPort)
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(OBDRead
-        MANUAL_FINALIZATION
+qt_add_executable(OBDRead
+    MANUAL_FINALIZATION
         src/main.cpp
         # Core DTOs
         src/core/dto/ConnectionState.h
@@ -30,11 +28,17 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         # Core
         src/core/DtcParser.h
         src/core/DtcParser.cpp
+        src/core/ReadinessParser.h
+        src/core/ReadinessParser.cpp
+        src/core/ScanService.h
+        src/core/ScanService.cpp
         src/core/ObdCommand.h
         # Hardware
         src/hardware/ObdTransporter.h
         src/hardware/TcpTransporter.h
         src/hardware/TcpTransporter.cpp
+        src/hardware/SerialTransporter.h
+        src/hardware/SerialTransporter.cpp
         src/hardware/BleTransporter.h
         src/hardware/BleTransporter.cpp
         # UI State
@@ -65,10 +69,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/ui/mainwindow.h
         src/ui/mainwindow.ui
     )
-endif()
 
 # --- Link Libraries ---
-target_link_libraries(OBDRead PRIVATE Qt6::Widgets Qt6::Network)
+target_link_libraries(OBDRead PRIVATE Qt6::Widgets Qt6::Network Qt6::SerialPort)
 
 # --- Include Directories ---
 target_include_directories(OBDRead PRIVATE
@@ -108,8 +111,12 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 # Define the implementation files (.cpp) that tests rely on
 set(TEST_IMPL_SOURCES
     src/core/DtcParser.cpp
+    src/core/ReadinessParser.cpp
+    src/core/ScanService.cpp
     src/ui/state/AppState.cpp
     # Add other .cpp files here for future tests
+
+    src/hardware/ObdTransporter.h # TODO: define core logic as a Library that both the main app and tests link against
 )
 
 # Define a macro to streamline creating test targets
@@ -140,3 +147,5 @@ endmacro()
 create_obd_test(tst_DtcParser   tests/tst_DtcParser.cpp)
 create_obd_test(tst_DtoTests    tests/tst_DtoTests.cpp)
 create_obd_test(tst_AppStateTests tests/tst_AppStateTests.cpp)
+create_obd_test(tst_ReadinessParser tests/tst_ReadinessParser.cpp)
+create_obd_test(tst_ScanService tests/tst_ScanService.cpp)

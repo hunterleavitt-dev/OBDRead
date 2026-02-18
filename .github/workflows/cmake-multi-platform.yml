@@ -57,7 +57,7 @@ jobs:
       # Configure requisite Qt6 dependencies prior to running CMake
     - name: Install Qt6 dependencies (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools libxkbcommon-x11-0
+      run: sudo apt-get update && sudo apt-get install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools libxkbcommon-x11-0 qt6-serialport-dev
 
     - name: Install Qt6 (Windows)
       if: runner.os == 'Windows'
@@ -65,6 +65,7 @@ jobs:
       with:
         version: '6.7.0' # Adjust version as needed
         host: 'windows'
+        modules: 'qtserialport'
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

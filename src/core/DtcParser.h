@@ -26,6 +26,14 @@ public:
     QStringList parseDtcResponse(const QByteArray &rawData);
 
     /**
+     * @brief Parses raw OBD-II response data for DTCs (Mode 03 or Mode 07).
+     * @param rawData The raw hex response from the adapter.
+     * @param mode The OBD mode (3 for stored DTCs, 7 for pending DTCs).
+     * @return A list of DTC strings (e.g., "P0133").
+     */
+    QStringList parseDtcResponse(const QByteArray &rawData, int mode);
+
+    /**
      * @brief Converts a single DTC from raw bytes to standard format.
      * @param byte1 First byte of the DTC.
      * @param byte2 Second byte of the DTC.

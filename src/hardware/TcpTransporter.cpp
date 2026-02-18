@@ -8,6 +8,7 @@ TcpTransporter::TcpTransporter(QObject *parent)
 {
     // wire up the socket signals to internal slots
     connect(m_socket, &QTcpSocket::connected, this, &TcpTransporter::onSocketConnected);
+    connect(m_socket, &QTcpSocket::disconnected, this, &TcpTransporter::onSocketDisconnected);
     connect(m_socket, &QTcpSocket::readyRead, this, &TcpTransporter::onSocketReadyRead);
     connect(m_socket, &QTcpSocket::errorOccurred, this, &TcpTransporter::onSocketError);
 }
@@ -56,6 +57,12 @@ void TcpTransporter::onSocketConnected()
 {
     qDebug() << "TCP Connected!";
     emit connected();
+}
+
+void TcpTransporter::onSocketDisconnected()
+{
+    qDebug() << "TCP Disconnected!";
+    emit disconnected();
 }
 
 void TcpTransporter::onSocketReadyRead()
