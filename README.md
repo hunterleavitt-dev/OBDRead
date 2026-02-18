@@ -263,8 +263,9 @@ This project is licensed under the **GNU General Public License v3.0** - see the
 
 ## Acknowledgements
 
-This project uses the [ELM327-emulator](https://github.com/Ircama/ELM327-emulator) by Ircama to simulate ECU responses during development.
-
-**License Notice:** The emulator is used as an external testing tool and is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+1. This project uses the [ELM327-emulator](https://github.com/Ircama/ELM327-emulator) by Ircama to simulate ECU responses during development.
+   - **License Notice:** The emulator is used as an external testing tool and is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+2. This projects adapts the list of OBDII PIDs from `obd2_codes.py` in the [pyobd](https://github.com/barracuda-fsh/pyobd) project by barracuda-fsh for use in a lookup file, `DtcLookup.h`, used in the UI.
+   - **License Notice:** `pyobd` is licensed under [GPL-2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) and the relevant copyright notices from the source can be viewed at the beginning of `DtcLookup.h`.
 
 

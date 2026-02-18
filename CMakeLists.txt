@@ -41,6 +41,8 @@ qt_add_executable(OBDRead
         src/hardware/SerialTransporter.cpp
         src/hardware/BleTransporter.h
         src/hardware/BleTransporter.cpp
+        # DTC Lookup Resources
+        src/resources/DtcLookup.h
         # UI State
         src/ui/state/AppState.h
         src/ui/state/AppState.cpp
@@ -78,6 +80,7 @@ target_include_directories(OBDRead PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hardware
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/resources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui
 )
 
