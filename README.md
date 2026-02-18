@@ -1,6 +1,30 @@
 # OBDRead
 
-A cross-platform desktop application for reading OBD-II diagnostic data from automobiles via hardware adapters. Built with Qt6 and C++17.
+A cross-platform desktop application for reading OBD-II diagnostic data from automobiles via ELM327 hardware adapters. Built with Qt6 and C++17.
+
+## Table of Contents
+- [Features](#features)
+- [Architecture](#architecture)
+  - [Architecture Layers](#architecture-layers)
+  - [DTC Code Types](#dtc-code-types)
+- [Prerequisites](#prerequisites)
+- [Building](#building)
+  - [Configure and Build](#configure-and-build)
+  - [Build with a Specific Generator (Windows)](#build-with-a-specific-generator-windows)
+  - [Build with Qt Creator](#build-with-qt-creator)
+- [Usage](#usage)
+  - [Connecting to an OBD-II Adapter](#connecting-to-an-obd-ii-adapter)
+  - [Running a Diagnostic Scan](#running-a-diagnostic-scan)
+  - [Connection Troubleshooting](#connection-troubleshooting)
+- [Testing](#testing)
+  - [Run Tests](#run-tests)
+  - [Test Coverage](#test-coverage)
+- [Project Status](#project-status)
+  - [Phase 1 - Architecture + UI Skeleton (Completed)](#phase-1---architecture--ui-skeleton-completed)
+  - [Phase 2 - Connection + Health Check + Scan Pipeline (Completed)](#phase-2---connection--health-check--scan-pipeline-completed)
+  - [Backend (Existing)](#backend-existing)
+  - [Future Phases (Planned)](#future-phases-planned)
+- [License](#license)
 
 ## Features
 
@@ -191,7 +215,7 @@ Current tests cover:
 
 ## Project Status
 
-This project is in early development (v0.1). The implementation follows a multi-phase plan for incremental feature development.
+This project is in early development (v0.2). The implementation follows a multi-phase plan for incremental feature development.
 
 ### Phase 1 - Architecture + UI Skeleton (Completed)
 
