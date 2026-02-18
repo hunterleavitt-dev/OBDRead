@@ -25,6 +25,7 @@ A cross-platform desktop application for reading OBD-II diagnostic data from aut
   - [Backend (Existing)](#backend-existing)
   - [Future Phases (Planned)](#future-phases-planned)
 - [License](#license)
+- [Acknowledgements](#acknowledgements)
 
 ## Features
 
