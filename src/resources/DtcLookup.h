@@ -24,8 +24,10 @@
 #include <map>
 
 
-// Using string_view avoids copying the description strings into memory at runtime
-inline const std::map<std::string_view, std::string_view> DTC_MAP = {
+/**
+ * @brief In-memory lookup table for text-descriptions of DTCs.
+ */
+inline const std::map<std::string_view, std::string_view> DTC_MAP = { // Using string_view avoids copying the description strings into memory at runtime
     { "P0001", "Fuel Volume Regulator Control Circuit/Open" },
     { "P0002", "Fuel Volume Regulator Control Circuit Range/Performance" },
     { "P0003", "Fuel Volume Regulator Control Circuit Low" },

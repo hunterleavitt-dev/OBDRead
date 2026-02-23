@@ -62,6 +62,8 @@ src/
 │   ├── SerialTransporter   # Serial/PTY implementation (primary transport)
 │   ├── TcpTransporter      # TCP/IP implementation (for emulators)
 │   └── BleTransporter      # Bluetooth LE implementation (stub, planned)
+├── resources/
+│   └── DtcLookup      # DTC-to-text lookup table for GUI display (Phase 3)
 └── ui/
     ├── state/
     │   └── AppState    # Central application state management
